@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clothing Showroom</title>
+  <style>
+    :root{
+      --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af; --accent:#22d3ee; --ring:0 10px 30px rgba(34,211,238,.15);
+    }
+    @media (prefers-color-scheme: light){:root{--bg:#f5f7ff;--card:#ffffff;--text:#0f172a;--muted:#6b7280;--accent:#0891b2;--ring:0 10px 30px rgba(8,145,178,.12)}}
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(900px 500px at -10% -10%, rgba(34,211,238,.2),transparent),var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto}
+    header{position:sticky;top:0;z-index:10;background:linear-gradient(180deg, rgba(255,255,255,.06), transparent);backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,.08)}
+    .bar{max-width:1100px;margin:auto;display:flex;gap:12px;align-items:center;padding:12px 16px}
+    .brand{font-weight:800;letter-spacing:.5px}
+    .brand span{color:var(--accent)}
+    .search{flex:1;display:flex;gap:8px}
+    input,select,button{border:1px solid rgba(255,255,255,.12);background:var(--card);color:var(--text);padding:10px 12px;border-radius:12px}
+    input::placeholder{color:var(--muted)}
+    button{cursor:pointer}
+    .wrap{max-width:1100px;margin:18px auto;padding:0 16px;display:grid;grid-template-columns:1fr 300px;gap:16px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+    .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:18px;overflow:hidden;box-shadow:var(--ring);display:flex;flex-direction:column}
+    .img{height:170px;display:grid;place-items:center;font-weight:700;letter-spacing:.5px}
+    .img[data-color="1"]{background:linear-gradient(135deg,#c7d2fe,#fbcfe8)}
+    .img[data-color="2"]{background:linear-gradient(135deg,#99f6e4,#bfdbfe)}
+    .img[data-color="3"]{background:linear-gradient(135deg,#fde68a,#fca5a5)}
+    .img[data-color="4"]{background:linear-gradient(135deg,#bbf7d0,#a7f3d0)}
+    .pad{padding:12px 14px;display:grid;gap:8px}
+    .name{font-weight:700}
+    .muted{color:var(--muted);font-size:.92rem}
+    .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+    .sizes{display:flex;gap:6px;flex-wrap:wrap}
+    .sizes button{padding:6px 10px;border-radius:10px;border:1px dashed rgba(255,255,255,.25);font-size:.85rem}
+    .price{font-weight:800}
+    .buy{display:flex;gap:8px}
+    .buy button{flex:1}
+
+    /* Cart */
+    .cart{position:sticky;top:68px;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:14px;box-shadow:var(--ring);height:fit-content}
+    .cart h3{margin:0 0 8px 0}
+    .cart ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+    .cart li{display:flex;justify-content:space-between;gap:8px;font-size:.95rem;color:var(--text)}
+    .cart .muted{font-size:.85rem}
+    .cart .tot{display:flex;justify-content:space-between;border-top:1px dashed rgba(255,255,255,.15);padding-top:10px;margin-top:8px;font-weight:800}
+    .empty{color:var(--muted)}
+
+    @media (max-width: 900px){.wrap{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <div class="brand"><span>STYLE</span>HOUSE</div>
+      <div class="search">
+        <input id="q" placeholder="Search (e.g., kurta, jeans)"/>
+        <select id="cat">
+          <option value="">All</option>
+          <option>Men</option>
+          <option>Women</option>
+          <option>Kids</option>
+        </select>
+        <select id="size">
+          <option value="">Any Size</option>
+          <option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option>
+        </select>
+        <button id="clear">Reset</button>
+      </div>
+      <button id="cartBtn">🛒 Cart</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section>
+      <div id="grid" class="grid"></div>
+    </section>
+
+    <aside class="cart" id="cart">
+      <h3>🛒 Your Cart</h3>
+      <ul id="cartItems"></ul>
+      <div class="tot"><span>Total</span><span id="total">₹0</span></div>
+      <div class="row" style="margin-top:10px">
+        <button id="checkout">Checkout</button>
+        <button id="empty">Clear</button>
+      </div>
+      <p class="muted" style="margin-top:8px">Tip: Click a size before adding to cart.</p>
+    </aside>
+  </main>
+
+  <script>
+    // --- Sample catalog ---
+    const products = [
+      {id:1, name:"Classic White Tee", cat:"Men", price:499, sizes:["S","M","L","XL"], color:1, tags:["tee","tshirt","top"]},
+      {id:2, name:"Denim Jeans", cat:"Men", price:1299, sizes:["S","M","L","XL"], color:2, tags:["jeans","denim"]},
+      {id:3, name:"Floral Kurta", cat:"Women", price:1499, sizes:["XS","S","M","L"], color:3, tags:["kurta","ethnic"]},
+      {id:4, name:"A-Line Dress", cat:"Women", price:1799, sizes:["S","M","L"], color:4, tags:["dress"]},
+      {id:5, name:"Kids Hoodie", cat:"Kids", price:899, sizes:["S","M","L"], color:1, tags:["hoodie"]},
+      {id:6, name:"Chinos", cat:"Men", price:1199, sizes:["S","M","L","XL"], color:3, tags:["pants"]},
+      {id:7, name:"Saree (Georgette)", cat:"Women", price:2499, sizes:["M","L"], color:2, tags:["saree"]},
+      {id:8, name:"Kids Joggers", cat:"Kids", price:699, sizes:["S","M","L"], color:4, tags:["joggers"]},
+    ];
+
+    const state = { sizeSel:{}, cart:[] };
+
+    const el = id => document.getElementById(id);
+    const grid = el('grid');
+    const cartBox = el('cart');
+
+    function renderProducts(list){
+      grid.innerHTML = list.map(p => `
+        <article class="card" data-id="${p.id}">
+          <div class="img" data-color="${p.color}">${p.name.split(' ')[0]}</div>
+          <div class="pad">
+            <div class="name">${p.name}</div>
+            <div class="row"><span class="muted">${p.cat}</span><span class="price">₹${p.price}</span></div>
+            <div class="sizes">${p.sizes.map(s=>`<button data-size="${s}" aria-label="size ${s}">${s}</button>`).join('')}</div>
+            <div class="buy">
+              <button class="add">Add to Cart</button>
+              <button class="wish">♡</button>
+            </div>
+          </div>
+        </article>`).join('');
+    }
+
+    function applyFilters(){
+      const q = el('q').value.toLowerCase().trim();
+      const cat = el('cat').value; const size = el('size').value;
+      const list = products.filter(p =>
+        (!cat || p.cat===cat) &&
+        (!size || p.sizes.includes(size)) &&
+        (!q || p.name.toLowerCase().includes(q) || p.tags.some(t=>t.includes(q)))
+      );
+      renderProducts(list);
+    }
+
+    function setSize(productId, size){ state.sizeSel[productId] = size; }
+
+    function addToCart(productId){
+      const p = products.find(x=>x.id==productId); const size = state.sizeSel[productId] || p.sizes[0];
+      const key = productId+"-"+size;
+      const line = state.cart.find(x=>x.key===key);
+      if(line) line.qty++; else state.cart.push({key, id:p.id, name:p.name, size, price:p.price, qty:1});
+      renderCart();
+    }
+
+    function renderCart(){
+      const list = el('cartItems');
+      if(!state.cart.length){ list.innerHTML = '<li class="empty">Cart is empty</li>'; el('total').textContent='₹0'; return; }
+      list.innerHTML = state.cart.map(line => `
+        <li>
+          <span>${line.name} <span class="muted">(${line.size})</span> × ${line.qty}</span>
+          <span>₹${line.price*line.qty}</span>
+        </li>`).join('');
+      const total = state.cart.reduce((s,x)=>s+x.price*x.qty,0);
+      el('total').textContent = '₹'+total;
+    }
+
+    // Events (delegated)
+    grid.addEventListener('click', e=>{
+      const card = e.target.closest('.card'); if(!card) return; const id = +card.dataset.id;
+      if(e.target.matches('.sizes button')){ card.querySelectorAll('.sizes button').forEach(b=>b.style.outline='none'); e.target.style.outline='2px solid var(--accent)'; setSize(id, e.target.dataset.size); }
+      if(e.target.matches('.add')) addToCart(id);
+    });
+
+    document.addEventListener('input', e=>{ if(['q','cat','size'].includes(e.target.id)) applyFilters(); });
+    el('clear').addEventListener('click', ()=>{ el('q').value=''; el('cat').value=''; el('size').value=''; applyFilters(); });
+
+    el('empty').addEventListener('click', ()=>{ state.cart=[]; renderCart(); });
+    el('checkout').addEventListener('click', ()=>{
+      alert('Demo checkout — integrate payment gateway here.');
+    });
+
+    // Simple cart toggle for small screens
+    el('cartBtn').addEventListener('click', ()=>{ cartBox.scrollIntoView({behavior:'smooth'}); });
+
+    // Init
+    renderProducts(products);
+    renderCart();
+  </script>
+</body>
+</html>
